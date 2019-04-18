@@ -16,6 +16,7 @@ use Psr\Log\LoggerInterface;
 use Smtpd\Auth\GuardHandler;
 use Smtpd\Auth\Handler;
 use Smtpd\Contracts\AuthorizesRecipients;
+use Smtpd\Events\MessageRecieved;
 use Smtpd\Smtp\Event;
 use Smtpd\Smtp\Server;
 
@@ -215,13 +216,7 @@ class ServerManager
      */
     public function handleNewMail(Event $event, string $from, array $recipients, \Zend\Mail\Message $message)
     {
-        $this->logger->info('handleNewMail', [
-            'from' => $from,
-            'recipients' => $recipients,
-            'message' => $message
-        ]);
-
-        return true;
+        MessageRecieved::dispatch($this->eventUser($event), Message::makeFrom($message, $from, $recipients));
     }
 
     /**
