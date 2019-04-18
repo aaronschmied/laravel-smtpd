@@ -28,11 +28,6 @@ class ServerManager
     protected $config;
 
     /**
-     * @var Handler
-     */
-    protected $authHandler;
-
-    /**
      * @var LoggerInterface
      */
     protected $logger;
@@ -58,12 +53,6 @@ class ServerManager
     {
         $this->config = $app->get('config');
 
-        if ($handler = $this->config->get('smtpd.auth.handler')) {
-            $this->authHandler = $app->make($handler);
-        } else {
-            $this->authHandler = new GuardHandler($this->config->get('smtpd.auth.guard', 'smtp'));
-        }
-
         $this->recipientHandler = $app->make($this->config->get('smtpd.auth.authorize_recipients'));
 
         $this->logger = $app->make(Logger::class);
@@ -79,6 +68,20 @@ class ServerManager
         $this->logger = $logger;
 
         return $this;
+    }
+
+    /**
+     * Create the auth handler.
+     *
+     * @return Handler
+     */
+    protected function authHandler()
+    {
+        if ($handler = $this->config->get('smtpd.auth.handler')) {
+            return $app->make($handler);
+        }
+        return new GuardHandler($this->config->get('smtpd.auth.guard', 'smtp'));
+
     }
 
     /**
@@ -228,15 +231,16 @@ class ServerManager
      */
     private function eventUser(Event $event)
     {
-        $credentials = $this
-            ->authHandler
-            ->decodeCredentials($event->getClient()->getCredentials());
+        $authHandler = $this->authHandler();
 
-        return $this->authHandler->attempt($credentials);
+        $credentials = $authHandler
+            ->decodeCredentials(
+                $event
+                    ->getClient()
+                    ->getCredentials()
+            );
+
+        return $authHandler
+            ->attempt($credentials);
     }
-
-
-
-
-
 }
