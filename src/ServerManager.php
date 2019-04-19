@@ -38,6 +38,11 @@ class ServerManager
     protected $recipientHandler;
 
     /**
+     * @var Handler
+     */
+    protected $authHandler;
+
+    /**
      * @var Server
      */
     protected $server;
@@ -56,6 +61,11 @@ class ServerManager
         $this->recipientHandler = $app->make($this->config->get('smtpd.auth.authorize_recipients'));
 
         $this->logger = $app->make(Logger::class);
+
+        if ($handler = $this->config->get('smtpd.auth.handler')) {
+            $this->authHandler = $app->make($handler);
+        }
+        $this->authHandler = new GuardHandler($this->config->get('smtpd.auth.guard', 'smtp'));
     }
 
     /**
@@ -68,20 +78,6 @@ class ServerManager
         $this->logger = $logger;
 
         return $this;
-    }
-
-    /**
-     * Create the auth handler.
-     *
-     * @return Handler
-     */
-    protected function authHandler()
-    {
-        if ($handler = $this->config->get('smtpd.auth.handler')) {
-            return $app->make($handler);
-        }
-        return new GuardHandler($this->config->get('smtpd.auth.guard', 'smtp'));
-
     }
 
     /**
