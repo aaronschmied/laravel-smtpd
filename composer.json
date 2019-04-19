@@ -33,6 +33,7 @@
         "illuminate/config": "^5.8",
         "illuminate/events": "^5.8",
         "illuminate/console": "^5.8",
-        "illuminate/auth": "^5.8"
+        "illuminate/auth": "^5.8",
+        "illuminate/support": "^5.8"
     }
 }
