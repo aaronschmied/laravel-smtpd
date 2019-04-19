@@ -41,8 +41,14 @@ class GuardHandler extends Handler
      */
     public function attempt(array $credentials): ?Authenticatable
     {
-        if ($this->guard->validate($credentials)) {
-            return $this->guard->user();
+        /**
+         * Clone the guard so the authenticated user is not carried on to the next connection.
+         * It's a bit of a hacky solution but required since the guards are designed for a single request lifetime.
+         */
+        $guard = clone $this->guard;
+
+        if ($guard->validate($credentials)) {
+            return $guard->user();
         }
         return null;
     }
