@@ -227,16 +227,16 @@ class ServerManager
      */
     private function eventUser(Event $event)
     {
-        $authHandler = $this->authHandler();
-
-        $credentials = $authHandler
+        $credentials = $this
+            ->authHandler
             ->decodeCredentials(
                 $event
                     ->getClient()
                     ->getCredentials()
             );
 
-        return $authHandler
+        return $this
+            ->authHandler
             ->attempt($credentials);
     }
 }
