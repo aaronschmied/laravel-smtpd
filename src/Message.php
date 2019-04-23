@@ -8,26 +8,24 @@
 
 namespace Smtpd;
 
-
-
-
+use Zend\Mail\Message as ZendMessage;
 use Illuminate\Mail\Mailable;
 
 class Message extends Mailable
 {
     /**
-     * @var \Zend\Mail\Message
+     * @var ZendMessage?
      */
     protected $zendMessage;
 
     /**
      * Set the zend message.
      *
-     * @param \Zend\Mail\Message $zendMessage
+     * @param ZendMessage $zendMessage
      *
      * @return $this
      */
-    public function setZendMessage(\Zend\Mail\Message $zendMessage)
+    public function setZendMessage(ZendMessage $zendMessage)
     {
         $this->zendMessage = $zendMessage;
 
@@ -35,20 +33,24 @@ class Message extends Mailable
     }
 
     /**
-     * Create a new message instance from the given zend message
+     * Get the zend message.
      *
-     * @param \Zend\Mail\Message $message
-     * @param string             $from
-     * @param array              $recipients
-     *
-     * @return Message
+     * @return ZendMessage|null
      */
-    public static function makeFrom(\Zend\Mail\Message $message, string $from, array $recipients)
+    public function getZendMessage(): ?ZendMessage
     {
-        return (new static())
-            ->from($from)
-            ->to($recipients)
-            ->html($message->getBody())
-            ->setZendMessage($message);
+        return $this->zendMessage;
+    }
+
+    /**
+     * Get the raw message content.
+     *
+     * @return string
+     */
+    public function getRawMessage()
+    {
+        return $this->getZendMessage() ? $this
+            ->getZendMessage()
+            ->toString() : '';
     }
 }
