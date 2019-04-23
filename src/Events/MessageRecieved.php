@@ -30,10 +30,10 @@ class MessageRecieved
     /**
      * MessageRecieved constructor.
      *
-     * @param Authenticatable $user
-     * @param Message         $message
+     * @param Authenticatable|null  $user
+     * @param Message               $message
      */
-    public function __construct(Authenticatable $user, Message $message)
+    public function __construct(?Authenticatable $user, Message $message)
     {
         $this->user = $user;
         $this->message = $message;
