@@ -6,6 +6,8 @@
 
 namespace Smtpd\Smtp;
 
+use Closure;
+
 class Event
 {
     const TRIGGER_NEW_MAIL = 1000;
@@ -23,7 +25,7 @@ class Event
     private $object;
 
     /**
-     * @var \Closure
+     * @var Closure
      */
     private $function;
 
@@ -39,9 +41,10 @@ class Event
 
     /**
      * Event constructor.
-     * @param null|int $trigger
-     * @param null|object $object
-     * @param null|\Closure|string $function
+     *
+     * @param null|int            $trigger
+     * @param null|object         $object
+     * @param null|Closure|string $function
      */
     public function __construct($trigger = null, $object = null, $function = null)
     {

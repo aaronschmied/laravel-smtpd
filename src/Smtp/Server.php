@@ -331,10 +331,10 @@ class Server extends Thread
     }
 
     /**
-     * @param Client $client
-     * @param string $from
-     * @param array $rcpt
-     * @param \Zend\Mail\Message $mail
+     * @param Client  $client
+     * @param string  $from
+     * @param array   $rcpt
+     * @param Message $mail
      */
     public function newMail(Client $client, string $from, array $rcpt, Message $mail)
     {
