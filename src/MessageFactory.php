@@ -8,9 +8,9 @@
 
 namespace Smtpd;
 
-use Illuminate\Support\Facades\Storage;
+use Goetas\Mail\ToSwiftMailParser\MimeParser;
+use Swift_Mime_SimpleMimeEntity as MessagePart;
 use Zend\Mail\Message as ZendMessage;
-use Zend\Mime\Message as ZendMimeMessage;
 
 class MessageFactory
 {
@@ -27,32 +27,64 @@ class MessageFactory
     {
         $message = new Message();
 
-        $message->subject($zendMessage->getSubject());
+        $message
+            ->subject($zendMessage->getSubject())
+            ->setZendMessage($zendMessage)
+            ->from($from)
+            ->to($recipients);
 
-        $message->from($from);
+        foreach (self::parseMessageParts($zendMessage->toString()) as $part) {
+            if ($part->getContentType() == 'text/html') {
+                $message->html($part->getBody());
+            }
+            else if ($part->getContentType() == 'text/plain') {
+                $message->text($part->getBody());
+            } else {
+                $message->attachMimeEntity($part);
+            }
+        }
+        return $message;
+    }
 
-        $message->to($recipients);
+    /**
+     * @param string $content
+     *
+     * @return MessagePart[]
+     */
+    public static function parseMessageParts(string $content): array
+    {
+        $mail = (new MimeParser())
+            ->parseString($content);
 
-        $mimeMessage = ZendMimeMessage::createFromMessage($zendMessage->toString());
+        $parts = static::getMessagePartChildren($mail);
 
-        foreach ($mimeMessage->getParts() as $part) {
-            switch ($part->getType()) {
-                case 'text/html':
-                    $message->html($part->getContent());
-                    break;
-                case 'text/plain':
-                    $message->text($part->getContent());
-                    break;
-                default:
-                    $message->attachData($part->getContent(), $part->getFileName());
+        foreach ($parts as $index => $part) {
+            if (strpos($part->getContentType(), 'multipart') === 0) {
+                // Remove multipart types
+                unset($parts[$index]);
+            } else if (empty($part->getContentType())) {
+                // Remove empty content
+                unset($parts[$index]);
             }
         }
 
-        $message->setZendMessage($zendMessage);
+        return $parts;
+    }
 
-        $filename = uniqid().".eml";
-        Storage::disk('local')->put($filename, $zendMessage->toString());
-        dd($filename);
-        return $message;
+    /**
+     * Get all children from a message part
+     *
+     * @param MessagePart $part
+     *
+     * @return MessagePart[]
+     */
+    private static function getMessagePartChildren(MessagePart $part): array
+    {
+        $children = [];
+        foreach ($part->getChildren() as $child) {
+            $children[] = $child;
+            $children = array_merge($children, self::getMessagePartChildren($child));
+        }
+        return $children;
     }
 }
