@@ -8,9 +8,6 @@
 
 namespace Smtpd;
 
-use Goetas\Mail\ToSwiftMailParser\MimeParser;
-use Illuminate\Support\Facades\Log;
-use Swift_Mime_SimpleMimeEntity as MessagePart;
 use Zend\Mail\Message as ZendMessage;
 
 class MessageFactory

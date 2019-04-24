@@ -9,13 +9,10 @@
 namespace Smtpd;
 
 use Goetas\Mail\ToSwiftMailParser\MimeParser;
-use Illuminate\Contracts\Mail\Mailer;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Mail\Mailable;
+use Swift_Message as SwiftMessage;
 use Swift_Mime_SimpleMimeEntity as MessagePart;
 use Zend\Mail\Message as ZendMessage;
-use Swift_Message;
-use Swift_Mime_SimpleMimeEntity;
-use Illuminate\Mail\Mailable;
 
 class Message extends Mailable
 {
@@ -62,8 +59,7 @@ class Message extends Mailable
         foreach ($this->parseMimeMessage($zendMessage->toString()) as $part) {
             if ($part->getContentType() == 'text/html') {
                 $this->html($part->getBody());
-            }
-            else if ($part->getContentType() == 'text/plain') {
+            } else if ($part->getContentType() == 'text/plain') {
                 $this->text($part->getBody());
             } else {
                 $this->attachMimeEntity($part);
@@ -138,17 +134,16 @@ class Message extends Mailable
     /**
      * Attach a swift mime entity
      *
-     * @param Swift_Mime_SimpleMimeEntity $part
+     * @param MessagePart $part
      *
      * @return Message
      */
-    protected function attachMimeEntity(Swift_Mime_SimpleMimeEntity $part)
+    protected function attachMimeEntity(MessagePart $part)
     {
-        return $this->withSwiftMessage(function (Swift_Message $message) use ($part) {
+        return $this->withSwiftMessage(function (SwiftMessage $message) use ($part) {
             $message->attach($part);
         });
     }
-
 
     /**
      * Build the final message
