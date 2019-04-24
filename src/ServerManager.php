@@ -215,7 +215,7 @@ class ServerManager
      */
     public function handleNewMail(Event $event, string $from, array $recipients, \Zend\Mail\Message $message)
     {
-        MessageRecieved::dispatch($this->eventUser($event), Message::makeFrom($message, $from, $recipients));
+        MessageRecieved::dispatch($this->eventUser($event), MessageFactory::make($message, $from, $recipients));
     }
 
     /**
