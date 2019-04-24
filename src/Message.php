@@ -9,6 +9,8 @@
 namespace Smtpd;
 
 use Zend\Mail\Message as ZendMessage;
+use Swift_Message;
+use Swift_Mime_SimpleMimeEntity;
 use Illuminate\Mail\Mailable;
 
 class Message extends Mailable
@@ -52,5 +54,19 @@ class Message extends Mailable
         return $this->getZendMessage() ? $this
             ->getZendMessage()
             ->toString() : '';
+    }
+
+    /**
+     * Attach a swift mime entity
+     *
+     * @param Swift_Mime_SimpleMimeEntity $part
+     *
+     * @return Message
+     */
+    public function attachMimeEntity(Swift_Mime_SimpleMimeEntity $part)
+    {
+        return $this->withSwiftMessage(function (Swift_Message $message) use ($part) {
+            $message->attach($part);
+        });
     }
 }
