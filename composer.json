@@ -34,6 +34,7 @@
         "illuminate/events": "^5.8",
         "illuminate/console": "^5.8",
         "illuminate/auth": "^5.8",
-        "illuminate/support": "^5.8"
+        "illuminate/support": "^5.8",
+        "goetas/to-swift-mime-parser": "^2.2"
     }
 }
