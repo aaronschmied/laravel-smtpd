@@ -8,6 +8,10 @@
 
 namespace Smtpd;
 
+use Goetas\Mail\ToSwiftMailParser\MimeParser;
+use Illuminate\Contracts\Mail\Mailer;
+use Illuminate\Support\Facades\Log;
+use Swift_Mime_SimpleMimeEntity as MessagePart;
 use Zend\Mail\Message as ZendMessage;
 use Swift_Message;
 use Swift_Mime_SimpleMimeEntity;
@@ -31,7 +35,82 @@ class Message extends Mailable
     {
         $this->zendMessage = $zendMessage;
 
+        $this->parseZendMessage();
+
         return $this;
+    }
+
+    /**
+     * Parse the zend message
+     *
+     * @return void
+     */
+    protected function parseZendMessage()
+    {
+        $zendMessage = $this->getZendMessage();
+
+        if (is_null($zendMessage)) {
+            return;
+        }
+
+        $this->subject($zendMessage->getSubject());
+
+        // Set the fallback view
+        $this->html($zendMessage->getBodyText());
+
+
+        foreach ($this->parseMimeMessage($zendMessage->toString()) as $part) {
+            if ($part->getContentType() == 'text/html') {
+                $this->html($part->getBody());
+            }
+            else if ($part->getContentType() == 'text/plain') {
+                $this->text($part->getBody());
+            } else {
+                $this->attachMimeEntity($part);
+            }
+        }
+    }
+
+    /**
+     * @param string $content
+     *
+     * @return MessagePart[]
+     */
+    private function parseMimeMessage(string $content): array
+    {
+        $mimeMessage = (new MimeParser())
+            ->parseString($content);
+
+        $parts = $this->getMimePartChildren($mimeMessage);
+
+        foreach ($parts as $index => $part) {
+            if (strpos($part->getContentType(), 'multipart') === 0) {
+                // Remove multipart types
+                unset($parts[$index]);
+            } else if (empty($part->getContentType())) {
+                // Remove empty content
+                unset($parts[$index]);
+            }
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Get all children from a message part
+     *
+     * @param MessagePart $part
+     *
+     * @return MessagePart[]
+     */
+    private function getMimePartChildren(MessagePart $part): array
+    {
+        $children = [];
+        foreach ($part->getChildren() as $child) {
+            $children[] = $child;
+            $children = array_merge($children, $this->getMimePartChildren($child));
+        }
+        return $children;
     }
 
     /**
@@ -63,10 +142,23 @@ class Message extends Mailable
      *
      * @return Message
      */
-    public function attachMimeEntity(Swift_Mime_SimpleMimeEntity $part)
+    protected function attachMimeEntity(Swift_Mime_SimpleMimeEntity $part)
     {
         return $this->withSwiftMessage(function (Swift_Message $message) use ($part) {
             $message->attach($part);
         });
     }
+
+
+    /**
+     * Build the final message
+     *
+     * @return void
+     */
+    public function build()
+    {
+        return;
+    }
+
+
 }
