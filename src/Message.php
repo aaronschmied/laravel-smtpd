@@ -52,10 +52,6 @@ class Message extends Mailable
 
         $this->subject($zendMessage->getSubject());
 
-        // Set the fallback view
-        $this->html($zendMessage->getBodyText());
-
-
         foreach ($this->parseMimeMessage($zendMessage->toString()) as $part) {
             if ($part->getContentType() == 'text/html') {
                 $this->html($part->getBody());
@@ -64,6 +60,11 @@ class Message extends Mailable
             } else {
                 $this->attachMimeEntity($part);
             }
+        }
+
+        // Set the fallback view
+        if (!$this->html) {
+            $this->html($zendMessage->getBodyText());
         }
     }
 
