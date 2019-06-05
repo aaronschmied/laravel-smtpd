@@ -8,15 +8,17 @@
 
 namespace Smtpd;
 
-
+use Exception;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Log\Logger;
 use Psr\Log\LoggerInterface;
 use Smtpd\Auth\GuardHandler;
 use Smtpd\Auth\Handler;
 use Smtpd\Contracts\AuthorizesRecipients;
-use Smtpd\Events\MessageRecieved;
+use Smtpd\Events\MessageReceived;
 use Smtpd\Smtp\Event;
 use Smtpd\Smtp\Server;
 
@@ -52,7 +54,7 @@ class ServerManager
      *
      * @param Application $app
      *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws BindingResolutionException
      */
     public function __construct(Application $app)
     {
@@ -81,6 +83,54 @@ class ServerManager
     }
 
     /**
+     * Run the server.
+     *
+     * @throws Exception
+     */
+    public function run()
+    {
+        $this
+            ->makeServer()
+            ->loop();
+    }
+
+    /**
+     * Creates the server instance.
+     *
+     * @return Server
+     *
+     * @throws Exception
+     */
+    protected function makeServer()
+    {
+        $this->server = new Server($this->buildConfig());
+
+        if (!$this->server->listen($this->buildContext())) {
+            throw new Exception('SMTP Server could not listen on selected interface');
+        }
+
+        $this->server->addEvent(new Event(
+                                    Event::TRIGGER_AUTH_ATTEMPT,
+                                    $this,
+                                    'handleAuthAttempt'
+                                ));
+
+        $this->server->addEvent(new Event(
+                                    Event::TRIGGER_NEW_MAIL,
+                                    $this,
+                                    'handleNewMail'
+                                ));
+
+        $this->server->addEvent(new Event(
+                                    Event::TRIGGER_NEW_RCPT,
+                                    $this,
+                                    'handleNewRecipient'
+                                ));
+
+        return $this->server;
+    }
+
+    /**
      * Get the config for the server
      *
      * @return array
@@ -88,10 +138,10 @@ class ServerManager
     protected function buildConfig(): array
     {
         return [
-            'ip' => $this->config->get('smtpd.interface'),
-            'port' => $this->config->get('smtpd.port'),
+            'ip'       => $this->config->get('smtpd.interface'),
+            'port'     => $this->config->get('smtpd.port'),
             'hostname' => $this->config->get('smtpd.hostname'),
-            'logger' => $this->logger,
+            'logger'   => $this->logger,
         ];
     }
 
@@ -110,54 +160,6 @@ class ServerManager
     }
 
     /**
-     * Creates the server instance.
-     *
-     * @return Server
-     *
-     * @throws \Exception
-     */
-    protected function makeServer()
-    {
-        $this->server = new Server($this->buildConfig());
-
-        if (!$this->server->listen($this->buildContext())) {
-            throw new \Exception('SMTP Server could not listen on selected interface');
-        }
-
-        $this->server->addEvent(new Event(
-                Event::TRIGGER_AUTH_ATTEMPT,
-                $this,
-                'handleAuthAttempt'
-                          ));
-
-        $this->server->addEvent(new Event(
-            Event::TRIGGER_NEW_MAIL,
-            $this,
-            'handleNewMail'
-                          ));
-
-        $this->server->addEvent(new Event(
-            Event::TRIGGER_NEW_RCPT,
-            $this,
-            'handleNewRecipient'
-                          ));
-
-        return $this->server;
-    }
-
-    /**
-     * Run the server.
-     *
-     * @throws \Exception
-     */
-    public function run()
-    {
-        $this
-            ->makeServer()
-            ->loop();
-    }
-
-    /**
      * Handle an auth attempt.
      *
      * @param Event  $event
@@ -171,17 +173,40 @@ class ServerManager
         try {
             switch ($method) {
                 case 'login':
-                    return ! is_null($this->eventUser($event));
+                    return !is_null($this->eventUser($event));
                 default:
-                    throw new \Exception("Unsupported auth method '{$method}'.");
+                    throw new Exception("Unsupported auth method '{$method}'.");
             }
-        } catch (\Exception $exception) {
+        }
+        catch (Exception $exception) {
             $this
                 ->logger
                 ->critical('Error while trying to authenticate.', compact('exception'));
         }
 
         return false;
+    }
+
+    /**
+     * Try to get the user from an event.
+     *
+     * @param Event $event
+     *
+     * @return Authenticatable|null
+     */
+    private function eventUser(Event $event)
+    {
+        $credentials = $this
+            ->authHandler
+            ->decodeCredentials(
+                $event
+                    ->getClient()
+                    ->getCredentials()
+            );
+
+        return $this
+            ->authHandler
+            ->attempt($credentials);
     }
 
     /**
@@ -206,37 +231,15 @@ class ServerManager
     /**
      * Handle an incoming message.
      *
-     * @param Event              $event
-     * @param string             $from
-     * @param array              $recipients
-     * @param \Zend\Mail\Message $message
+     * @param Event  $event
+     * @param string $from
+     * @param array  $recipients
+     * @param string $message
      *
      * @return bool
      */
-    public function handleNewMail(Event $event, string $from, array $recipients, \Zend\Mail\Message $message)
+    public function handleNewMail(Event $event, string $from, array $recipients, string $message)
     {
-        MessageRecieved::dispatch($this->eventUser($event), MessageFactory::make($message, $from, $recipients));
-    }
-
-    /**
-     * Try to get the user from an event.
-     *
-     * @param Event $event
-     *
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
-     */
-    private function eventUser(Event $event)
-    {
-        $credentials = $this
-            ->authHandler
-            ->decodeCredentials(
-                $event
-                    ->getClient()
-                    ->getCredentials()
-            );
-
-        return $this
-            ->authHandler
-            ->attempt($credentials);
+        MessageReceived::dispatch($this->eventUser($event), MessageFactory::make($message, $from, $recipients));
     }
 }
