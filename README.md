@@ -99,12 +99,25 @@ To recieve a message and handle it from there, create an event listener for the 
 
 The event contains the user (if authenticated) as well as the `Smtpd\Message` object.
 
+The `Smtpd\Message` can also create a `Mailable` object using the `makeMailable()` method. 
+
 ### Starting the listener
+
+#### using the command line
 
 To start listening for incoming connections, run the following command:
 
 ```
 php artisan smtpd:listen
+```
+
+#### using the server manager
+
+You can also start the server by using the `Smtpd\ServerManager` class from the dependency container.
+
+```php
+resolve(Smtpd\ServerManager::class)
+    ->run();
 ```
 
 From here you can save the message to your database, send it to another server using the laravel mailer or just ignore it... ¯\\\_(ツ)\_/¯
