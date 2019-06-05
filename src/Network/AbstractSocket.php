@@ -10,19 +10,19 @@ abstract class AbstractSocket
     private $handle;
 
     /**
-     * @param resource $handle
-     */
-    public function setHandle($handle)
-    {
-        $this->handle = $handle;
-    }
-
-    /**
      * @return resource
      */
     public function getHandle()
     {
         return $this->handle;
+    }
+
+    /**
+     * @param resource $handle
+     */
+    public function setHandle($handle)
+    {
+        $this->handle = $handle;
     }
 
     #abstract public function create();

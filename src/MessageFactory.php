@@ -8,24 +8,19 @@
 
 namespace Smtpd;
 
-use Zend\Mail\Message as ZendMessage;
-
 class MessageFactory
 {
     /**
      * Create a new message instance from the given zend message
      *
-     * @param ZendMessage $zendMessage
-     * @param string             $from
-     * @param array              $recipients
+     * @param string $content
+     * @param string $from
+     * @param array  $to
      *
      * @return Message
      */
-    public static function make(ZendMessage $zendMessage, string $from, array $recipients)
+    public static function make(string $content, string $from, array $to)
     {
-        return (new Message())
-            ->setZendMessage($zendMessage)
-            ->from($from)
-            ->to($recipients);
+        return new Message($content, $from, $to);
     }
 }

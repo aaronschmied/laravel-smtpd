@@ -8,116 +8,56 @@
 
 namespace Smtpd;
 
-use Goetas\Mail\ToSwiftMailParser\MimeParser;
-use Illuminate\Mail\Mailable;
-use Swift_Message as SwiftMessage;
-use Swift_Mime_SimpleMimeEntity as MessagePart;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Zend\Mail\Message as ZendMessage;
 
-class Message extends Mailable
+class Message
 {
     /**
-     * @var ZendMessage?
+     * @var string
      */
-    protected $zendMessage;
+    protected $raw;
 
     /**
-     * Set the zend message.
-     *
-     * @param ZendMessage $zendMessage
-     *
-     * @return $this
+     * @var string
      */
-    public function setZendMessage(ZendMessage $zendMessage)
+    protected $from;
+
+    /**
+     * @var array
+     */
+    protected $to;
+
+    /**
+     * Message constructor.
+     *
+     * @param string $raw
+     * @param string $from
+     * @param array $to
+     */
+    public function __construct($raw, $from, $to)
     {
-        $this->zendMessage = $zendMessage;
-
-        $this->parseZendMessage();
-
-        return $this;
+        $this->raw = $raw;
+        $this->from = $from;
+        $this->to = $to;
     }
 
     /**
-     * Parse the zend message
+     * Store the raw message in a given filesystem.
      *
-     * @return void
+     * @param Filesystem $filesystem
+     * @param null       $path
+     * @param array      $options
+     *
+     * @return string|null
      */
-    protected function parseZendMessage()
+    public function store(Filesystem $filesystem, $path = null, $options = [])
     {
-        $zendMessage = $this->getZendMessage();
-
-        if (is_null($zendMessage)) {
-            return;
+        if (is_null($path)) {
+            $path = uniqid('msg_') . ".eml";
         }
-
-        $this->subject($zendMessage->getSubject());
-
-        foreach ($this->parseMimeMessage($zendMessage->toString()) as $part) {
-            if ($part->getContentType() == 'text/html') {
-                $this->html($part->getBody());
-            } else if ($part->getContentType() == 'text/plain') {
-                $this->text($part->getBody());
-            } else {
-                $this->attachMimeEntity($part);
-            }
-        }
-
-        // Set the fallback view
-        if (!$this->html) {
-            $this->html($zendMessage->getBodyText());
-        }
-    }
-
-    /**
-     * @param string $content
-     *
-     * @return MessagePart[]
-     */
-    private function parseMimeMessage(string $content): array
-    {
-        $mimeMessage = (new MimeParser())
-            ->parseString($content);
-
-        $parts = $this->getMimePartChildren($mimeMessage);
-
-        foreach ($parts as $index => $part) {
-            if (strpos($part->getContentType(), 'multipart') === 0) {
-                // Remove multipart types
-                unset($parts[$index]);
-            } else if (empty($part->getContentType())) {
-                // Remove empty content
-                unset($parts[$index]);
-            }
-        }
-
-        return $parts;
-    }
-
-    /**
-     * Get all children from a message part
-     *
-     * @param MessagePart $part
-     *
-     * @return MessagePart[]
-     */
-    private function getMimePartChildren(MessagePart $part): array
-    {
-        $children = [];
-        foreach ($part->getChildren() as $child) {
-            $children[] = $child;
-            $children = array_merge($children, $this->getMimePartChildren($child));
-        }
-        return $children;
-    }
-
-    /**
-     * Get the zend message.
-     *
-     * @return ZendMessage|null
-     */
-    public function getZendMessage(): ?ZendMessage
-    {
-        return $this->zendMessage;
+        $filesystem->put($path, $this->getRaw(), $options);
+        return $path;
     }
 
     /**
@@ -125,36 +65,31 @@ class Message extends Mailable
      *
      * @return string
      */
-    public function getRawMessage()
+    public function getRaw(): string
     {
-        return $this->getZendMessage() ? $this
-            ->getZendMessage()
-            ->toString() : '';
+        return $this->raw;
     }
 
     /**
-     * Attach a swift mime entity
+     * Create a mailable from the message.
      *
-     * @param MessagePart $part
-     *
-     * @return Message
+     * @return Mailable
      */
-    protected function attachMimeEntity(MessagePart $part)
+    public function makeMailable(): Mailable
     {
-        return $this->withSwiftMessage(function (SwiftMessage $message) use ($part) {
-            $message->attach($part);
-        });
+        return (new Mailable())
+            ->setZendMessage($this->getZendMessage());
     }
 
     /**
-     * Build the final message
+     * Get the zend message.
      *
-     * @return void
+     * @return ZendMessage
      */
-    public function build()
+    public function getZendMessage(): ZendMessage
     {
-        return;
+        return ZendMessage::fromString($this->raw)
+            ->setFrom($this->from)
+            ->setTo($this->to);
     }
-
-
 }

@@ -37,7 +37,8 @@ class StringParser
 
     /**
      * StringParser constructor.
-     * @param string $str
+     *
+     * @param string   $str
      * @param null|int $argsMax
      */
     public function __construct(string $str, $argsMax = null)
@@ -46,52 +47,6 @@ class StringParser
         $this->str = trim($this->str);
         $this->len = strlen($this->str);
         $this->argsMax = $argsMax;
-    }
-
-    private function reset()
-    {
-        $this->argsId = -1;
-        $this->args = [];
-        $this->argsLen = 0;
-    }
-
-    private function fixPrev()
-    {
-        if ($this->argsId >= 0) {
-            if ($this->args[$this->argsId]
-                && $this->args[$this->argsId][0] == '"'
-                && substr($this->args[$this->argsId], -1) == '"'
-            ) {
-                $tmp = substr(substr($this->args[$this->argsId], 1), 0, -1);
-                if (strpos($tmp, '"') === false) {
-                    $this->args[$this->argsId] = $tmp;
-                    $this->argsLen = count($this->args);
-                }
-            }
-        }
-    }
-
-    /**
-     * @param string $char
-     */
-    private function charNew(string $char = '')
-    {
-        if ($this->argsMax === null || $this->argsLen < $this->argsMax) {
-            $this->fixPrev();
-            $this->argsId++;
-            $this->args[$this->argsId] = $char;
-            $this->argsLen = count($this->args);
-        }
-    }
-
-    /**
-     * @param string $char
-     */
-    private function charAppend(string $char)
-    {
-        if ($this->argsId != -1) {
-            $this->args[$this->argsId] .= $char;
-        }
     }
 
     /**
@@ -129,7 +84,7 @@ class StringParser
                         $this->charNew($char);
                         $endChar = '"';
                         $in = true;
-                    } elseif ($char == ' ') {
+                    } else if ($char == ' ') {
                         if ($nextChar != ' ' && $nextChar != '"') {
                             $this->charNew();
                             $endChar = ' ';
@@ -153,5 +108,51 @@ class StringParser
         $this->fixPrev();
 
         return $this->args;
+    }
+
+    private function reset()
+    {
+        $this->argsId = -1;
+        $this->args = [];
+        $this->argsLen = 0;
+    }
+
+    /**
+     * @param string $char
+     */
+    private function charAppend(string $char)
+    {
+        if ($this->argsId != -1) {
+            $this->args[$this->argsId] .= $char;
+        }
+    }
+
+    /**
+     * @param string $char
+     */
+    private function charNew(string $char = '')
+    {
+        if ($this->argsMax === null || $this->argsLen < $this->argsMax) {
+            $this->fixPrev();
+            $this->argsId++;
+            $this->args[$this->argsId] = $char;
+            $this->argsLen = count($this->args);
+        }
+    }
+
+    private function fixPrev()
+    {
+        if ($this->argsId >= 0) {
+            if ($this->args[$this->argsId]
+                && $this->args[$this->argsId][0] == '"'
+                && substr($this->args[$this->argsId], -1) == '"'
+            ) {
+                $tmp = substr(substr($this->args[$this->argsId], 1), 0, -1);
+                if (strpos($tmp, '"') === false) {
+                    $this->args[$this->argsId] = $tmp;
+                    $this->argsLen = count($this->args);
+                }
+            }
+        }
     }
 }

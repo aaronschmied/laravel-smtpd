@@ -79,7 +79,7 @@ class Event
 
     /**
      * @param Client $client
-     * @param array $args
+     * @param array  $args
      *
      * @return mixed
      */

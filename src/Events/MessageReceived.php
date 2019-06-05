@@ -9,11 +9,11 @@
 namespace Smtpd\Events;
 
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 use Smtpd\Message;
 
-class MessageRecieved
+class MessageReceived
 {
     use Dispatchable, SerializesModels;
 
@@ -28,10 +28,10 @@ class MessageRecieved
     public $message;
 
     /**
-     * MessageRecieved constructor.
+     * MessageReceived constructor.
      *
-     * @param Authenticatable|null  $user
-     * @param Message               $message
+     * @param Authenticatable|null $user
+     * @param Message              $message
      */
     public function __construct(?Authenticatable $user, Message $message)
     {
