@@ -8,7 +8,7 @@
 
 namespace Smtpd\Commands;
 
-
+use Exception;
 use Illuminate\Console\Command;
 use Smtpd\Logging\CommandLogProxy;
 use Smtpd\ServerManager;
@@ -47,21 +47,11 @@ class Listen extends Command
     }
 
     /**
-     * Get the server manager.
-     *
-     * @return ServerManager
-     */
-    private function getServerManager()
-    {
-        return $this->serverManager;
-    }
-
-    /**
      * Execute the console command.
      *
      * @return mixed
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function handle()
     {
@@ -69,5 +59,15 @@ class Listen extends Command
             ->getServerManager()
             ->setLogger(new CommandLogProxy($this))
             ->run();
+    }
+
+    /**
+     * Get the server manager.
+     *
+     * @return ServerManager
+     */
+    private function getServerManager()
+    {
+        return $this->serverManager;
     }
 }
