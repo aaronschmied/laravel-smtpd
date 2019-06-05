@@ -8,13 +8,12 @@
 namespace Smtpd\Smtp;
 
 use Exception;
-use RuntimeException;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
-use Zend\Mail\Message;
-use Symfony\Component\OptionsResolver\OptionsResolver;
+use RuntimeException;
 use Smtpd\Network\AbstractSocket;
 use Smtpd\Network\Socket;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class Server extends Thread
 {
@@ -76,6 +75,7 @@ class Server extends Thread
 
     /**
      * Server constructor.
+     *
      * @param array $options
      */
     public function __construct(array $options = [])
@@ -102,22 +102,6 @@ class Server extends Thread
     }
 
     /**
-     * @param string $hostname
-     */
-    public function setHostname(string $hostname)
-    {
-        $this->hostname = $hostname;
-    }
-
-    /**
-     * @return string
-     */
-    public function getHostname()
-    {
-        return $this->hostname;
-    }
-
-    /**
      * @param string $ip
      */
     public function setIp(string $ip)
@@ -135,6 +119,7 @@ class Server extends Thread
 
     /**
      * @param array $contextOptions
+     *
      * @return bool
      */
     public function listen(array $contextOptions): bool
@@ -148,7 +133,8 @@ class Server extends Thread
         $bind = false;
         try {
             $bind = $this->socket->bind($this->ip, $this->port);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             $this->logger->error($e->getMessage());
         }
 
@@ -160,12 +146,26 @@ class Server extends Thread
 
                     return true;
                 }
-            } catch (Exception $e) {
+            }
+            catch (Exception $e) {
                 $this->logger->error($e->getMessage());
             }
         }
 
         return false;
+    }
+
+    /**
+     * Main Loop
+     */
+    public function loop()
+    {
+        while (!$this->getExit()) {
+            $this->run();
+            usleep(static::LOOP_USLEEP);
+        }
+
+        $this->shutdown();
     }
 
     /**
@@ -224,36 +224,6 @@ class Server extends Thread
     }
 
     /**
-     * Main Loop
-     */
-    public function loop()
-    {
-        while (!$this->getExit()) {
-            $this->run();
-            usleep(static::LOOP_USLEEP);
-        }
-
-        $this->shutdown();
-    }
-
-    /**
-     * Shutdown the server.
-     * Should be executed before your application exits.
-     */
-    public function shutdown()
-    {
-        $this->logger->debug('shutdown');
-
-        // Notify all clients.
-        foreach ($this->clients as $clientId => $client) {
-            $client->sendQuit();
-            $this->removeClient($client);
-        }
-
-        $this->logger->debug('shutdown done');
-    }
-
-    /**
      * Create a new Client for a new incoming socket connection.
      *
      * @return Client
@@ -264,7 +234,7 @@ class Server extends Thread
 
         $options = [
             'hostname' => $this->getHostname(),
-            'logger' => $this->logger,
+            'logger'   => $this->logger,
         ];
         $client = new Client($options);
         $client->setSocket($socket);
@@ -277,9 +247,26 @@ class Server extends Thread
     }
 
     /**
+     * @return string
+     */
+    public function getHostname()
+    {
+        return $this->hostname;
+    }
+
+    /**
+     * @param string $hostname
+     */
+    public function setHostname(string $hostname)
+    {
+        $this->hostname = $hostname;
+    }
+
+    /**
      * Find a Client by socket handle.
      *
      * @param resource $handle
+     *
      * @return Client|null
      */
     public function getClientByHandle($handle)
@@ -308,6 +295,23 @@ class Server extends Thread
     }
 
     /**
+     * Shutdown the server.
+     * Should be executed before your application exits.
+     */
+    public function shutdown()
+    {
+        $this->logger->debug('shutdown');
+
+        // Notify all clients.
+        foreach ($this->clients as $clientId => $client) {
+            $client->sendQuit();
+            $this->removeClient($client);
+        }
+
+        $this->logger->debug('shutdown done');
+    }
+
+    /**
      * @param Event $event
      */
     public function addEvent(Event $event)
@@ -317,9 +321,20 @@ class Server extends Thread
     }
 
     /**
-     * @param integer $trigger
      * @param Client $client
-     * @param array $args
+     * @param string $from
+     * @param array  $rcpt
+     * @param string $mail
+     */
+    public function newMail(Client $client, string $from, array $rcpt, string $mail)
+    {
+        $this->eventExecute(Event::TRIGGER_NEW_MAIL, $client, [$from, $rcpt, $mail]);
+    }
+
+    /**
+     * @param integer $trigger
+     * @param Client  $client
+     * @param array   $args
      */
     private function eventExecute(int $trigger, Client $client, array $args = [])
     {
@@ -331,17 +346,6 @@ class Server extends Thread
     }
 
     /**
-     * @param Client  $client
-     * @param string  $from
-     * @param array   $rcpt
-     * @param Message $mail
-     */
-    public function newMail(Client $client, string $from, array $rcpt, Message $mail)
-    {
-        $this->eventExecute(Event::TRIGGER_NEW_MAIL, $client, [$from, $rcpt, $mail]);
-    }
-
-    /**
      * @param Client $client
      * @param string $rcpt
      *
@@ -350,7 +354,7 @@ class Server extends Thread
     public function newRcpt(Client $client, string $rcpt)
     {
         foreach ($this->events as $eventId => $event) {
-            if ($event->getTrigger() == Event::TRIGGER_NEW_RCPT && !$event->execute($client, [ $rcpt])) {
+            if ($event->getTrigger() == Event::TRIGGER_NEW_RCPT && !$event->execute($client, [$rcpt])) {
                 return false;
             }
         }
