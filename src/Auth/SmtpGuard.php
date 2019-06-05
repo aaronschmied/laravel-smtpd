@@ -35,7 +35,7 @@ class SmtpGuard implements Guard
     /**
      * SmtpGuard constructor.
      *
-     * @param $provider UserProvider
+     * @param $provider      UserProvider
      * @param $usernameField string
      */
     public function __construct(UserProvider $provider, ?string $usernameField)
@@ -69,9 +69,10 @@ class SmtpGuard implements Guard
             ->getProvider()
             ->retrieveByCredentials($credentials);
 
-        if (! is_null($user) and Hash::check($credentials['password'], $user->getAuthPassword())) {
+        if (!is_null($user) and Hash::check($credentials['password'], $user->getAuthPassword())) {
             $this->setUser($user);
         }
 
         return $this->check();
-}}
+    }
+}

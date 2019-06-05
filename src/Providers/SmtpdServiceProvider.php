@@ -31,25 +31,14 @@ class SmtpdServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register the auth guard
-     *
-     * @return void
-     */
-    protected function registerAuthGuard()
-    {
-        Auth::extend('smtp', function ($app, $name, array $config) {
-            return new SmtpGuard(Auth::createUserProvider($config['provider']), Arr::get($config, 'username_field'));
-        });
-    }
-
-    /**
      * Register the config file.
      *
      * @return void
      */
-    protected function registerConfig() {
+    protected function registerConfig()
+    {
         // Config file path.
-        $dist = __DIR__.'/../../config/smtpd.php';
+        $dist = __DIR__ . '/../../config/smtpd.php';
         // If we're installing in to a Lumen project, config_path
         // won't exist so we can't auto-publish the config
         if (function_exists('config_path')) {
@@ -63,6 +52,21 @@ class SmtpdServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register the auth guard
+     *
+     * @return void
+     */
+    protected function registerAuthGuard()
+    {
+        Auth::extend('smtp', function ($app, $name, array $config) {
+            return new SmtpGuard(
+                Auth::createUserProvider($config['provider']),
+                Arr::get($config, 'username_field')
+            );
+        });
+    }
+
+    /**
      * Register the console commands.
      *
      * @return void
@@ -71,8 +75,8 @@ class SmtpdServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
-                Listen::class
-            ]);
+                                Listen::class,
+                            ]);
         }
     }
 

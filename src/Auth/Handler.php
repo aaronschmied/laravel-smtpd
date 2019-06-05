@@ -17,7 +17,7 @@ abstract class Handler
     public function decodeCredentials(array $credentials): array
     {
         return [
-            'user' => base64_decode(Arr::get($credentials, 'user')),
+            'user'     => base64_decode(Arr::get($credentials, 'user')),
             'password' => base64_decode(Arr::get($credentials, 'password')),
         ];
     }
