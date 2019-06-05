@@ -18,7 +18,8 @@ class StreamSocket extends AbstractSocket
 
     /**
      * @param string $ip
-     * @param int $port
+     * @param int    $port
+     *
      * @return bool
      */
     public function bind(string $ip, int $port): bool
@@ -31,6 +32,7 @@ class StreamSocket extends AbstractSocket
 
     /**
      * @param array $contextOptions
+     *
      * @return bool
      */
     public function listen(array $contextOptions = []): bool
@@ -50,7 +52,8 @@ class StreamSocket extends AbstractSocket
 
     /**
      * @param string $ip
-     * @param int $port
+     * @param int    $port
+     *
      * @return bool
      */
     public function connect(string $ip, int $port): bool
@@ -82,6 +85,7 @@ class StreamSocket extends AbstractSocket
      * @param array $readHandles
      * @param array $writeHandles
      * @param array $exceptHandles
+     *
      * @return int
      */
     public function select(array &$readHandles, array &$writeHandles, array &$exceptHandles): int
@@ -91,7 +95,7 @@ class StreamSocket extends AbstractSocket
 
     /**
      * @param string $ip
-     * @param int $port
+     * @param int    $port
      */
     public function getPeerName(string &$ip, int &$port)
     {
@@ -137,6 +141,7 @@ class StreamSocket extends AbstractSocket
 
     /**
      * @param string $data
+     *
      * @return int
      */
     public function write(string $data): int
