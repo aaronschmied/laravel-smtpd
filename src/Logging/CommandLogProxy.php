@@ -32,12 +32,10 @@ class CommandLogProxy implements LoggerInterface
      * CommandOutLogger constructor.
      *
      * @param Command $command
-     * @param bool    $verbose
      */
-    public function __construct(Command $command, bool  $verbose = false)
+    public function __construct(Command $command)
     {
         $this->command = $command;
-        $this->verbose = $verbose;
     }
 
     /**
@@ -58,15 +56,13 @@ class CommandLogProxy implements LoggerInterface
             case LogLevel::ALERT:
             case LogLevel::CRITICAL:
             case LogLevel::ERROR:
-                $this->command->error($message);
+                $this->command->error($message, $level);
                 break;
             case LogLevel::WARNING:
-                $this->command->warn($message);
+                $this->command->warn($message, $level);
                 break;
             default:
-                if ($this->verbose) {
-                    $this->command->info($message);
-                }
+                $this->command->info($message, $level);
         }
     }
 }
