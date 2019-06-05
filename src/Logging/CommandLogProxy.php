@@ -24,13 +24,20 @@ class CommandLogProxy implements LoggerInterface
     protected $command;
 
     /**
+     * @var bool
+     */
+    protected $verbose = false;
+
+    /**
      * CommandOutLogger constructor.
      *
      * @param Command $command
+     * @param bool    $verbose
      */
-    public function __construct(Command $command)
+    public function __construct(Command $command, bool  $verbose = false)
     {
         $this->command = $command;
+        $this->verbose = $verbose;
     }
 
     /**
@@ -42,7 +49,7 @@ class CommandLogProxy implements LoggerInterface
      */
     public function log($level, $message, array $context = [])
     {
-        if (! empty($context)) {
+        if (!empty($context)) {
             $message .= " " . json_encode($context);
         }
 
@@ -57,7 +64,9 @@ class CommandLogProxy implements LoggerInterface
                 $this->command->warn($message);
                 break;
             default:
-                $this->command->info($message);
+                if ($this->verbose) {
+                    $this->command->info($message);
+                }
         }
     }
 }
